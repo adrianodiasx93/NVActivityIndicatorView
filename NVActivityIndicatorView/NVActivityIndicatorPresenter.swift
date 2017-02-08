@@ -55,6 +55,8 @@ public final class ActivityData {
     
     /// Background color of the UI blocker
     let backgroundColor: UIColor
+
+    let controller: UIViewController
     
     /**
      Create information package used to display UI blocker.
@@ -80,7 +82,8 @@ public final class ActivityData {
                 padding: CGFloat? = nil,
                 displayTimeThreshold: Int? = nil,
                 minimumDisplayTime: Int? = nil,
-                backgroundColor: UIColor? = nil) {
+                backgroundColor: UIColor? = nil,
+                controller: UIViewController) {
         self.size = size ?? NVActivityIndicatorView.DEFAULT_BLOCKER_SIZE
         self.message = message ?? NVActivityIndicatorView.DEFAULT_BLOCKER_MESSAGE
         self.messageFont = messageFont ?? NVActivityIndicatorView.DEFAULT_BLOCKER_MESSAGE_FONT
@@ -90,6 +93,7 @@ public final class ActivityData {
         self.displayTimeThreshold = displayTimeThreshold ?? NVActivityIndicatorView.DEFAULT_BLOCKER_DISPLAY_TIME_THRESHOLD
         self.minimumDisplayTime = minimumDisplayTime ?? NVActivityIndicatorView.DEFAULT_BLOCKER_MINIMUM_DISPLAY_TIME
         self.backgroundColor = backgroundColor ?? NVActivityIndicatorView.DEFAULT_BLOCKER_BACKGROUND_COLOR
+        self.controller = controller
     }
 }
 
@@ -133,7 +137,8 @@ public final class NVActivityIndicatorPresenter {
     public final func stopAnimating() {
         isStopAnimatingCalled = true
         guard hideTimer == nil else { return }
-        hide()
+        guard let activityData = hideTimer?.userInfo as? ActivityData else { return }
+        hide(with: activityData)
     }
 
     /// Set message displayed under activity indicator view.
@@ -170,7 +175,8 @@ public final class NVActivityIndicatorPresenter {
         hideTimer?.invalidate()
         hideTimer = nil
         if isStopAnimatingCalled {
-            hide()
+            guard let activityData = timer.userInfo as? ActivityData else { return }
+            hide(with: activityData)
         }
     }
 
@@ -200,14 +206,15 @@ public final class NVActivityIndicatorPresenter {
         activityContainer.addSubview(activityLabel)
       
         hideTimer = scheduledTimer(activityData.minimumDisplayTime, selector: #selector(hideTimerFired(_:)), data: nil)
-        guard let keyWindow = UIApplication.shared.keyWindow else { return }
-        keyWindow.addSubview(activityContainer)
+//        guard let keyWindow = UIApplication.shared.keyWindow else { return }
+        activityData.controller.view.addSubview(activityContainer)
     }
     
-    private func hide() {
-        guard let keyWindow = UIApplication.shared.keyWindow else { return }
+    private func hide(with activityData: ActivityData) {
+//        guard let keyWindow = UIApplication.shared.keyWindow else { return }
+        let keyWindow = activityData.controller.view
         
-        for item in keyWindow.subviews
+        for item in (keyWindow?.subviews)!
             where item.restorationIdentifier == restorationIdentifier {
                 item.removeFromSuperview()
         }
